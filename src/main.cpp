@@ -1,4 +1,7 @@
+#pragma GCC diagnostic ignored "-Wregister"
+
 #include <Arduino.h>
+#include <ArduinoOTA.h>
 
 #ifdef ESP32
 #include <WiFi.h>
@@ -9,6 +12,7 @@
 #endif
 #include <ESPAsyncWebServer.h>
 
+#include "webserial.hpp"
 #include "ledstrip.hpp"
 #include "server.hpp"
 
@@ -17,6 +21,15 @@
 // WIFI settings
 const char *const ssid = "LekkerBrownennn2";
 const char *const password = "wegwezen3";
+
+// =============================================================================
+// webserial callback
+// =============================================================================
+void callback(unsigned char *data, unsigned int length)
+{
+    data[length] = '\0';
+    Serial.println((char *)data);
+}
 
 // =============================================================================
 // Setup
@@ -48,6 +61,15 @@ void setup()
 
     led_setup();
     Serial.println("LED strip initialized");
+
+    // OTA:
+    ArduinoOTA.begin();
+
+// webserial
+#if USE_WEBSERIAL
+    WebSerial.begin(&server);
+    WebSerial.msgCallback(callback);
+#endif
 }
 
 // =============================================================================
@@ -71,6 +93,9 @@ void loop()
 #endif
 
     led_update();
+
+    // OTA:
+    ArduinoOTA.handle();
 }
 
 // =============================================================================

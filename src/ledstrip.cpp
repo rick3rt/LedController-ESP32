@@ -1,10 +1,9 @@
 #include "ledstrip.hpp"
 
 CRGB leds[NUM_LEDS];
-CRGB defaultColor = CRGB::Blue;
+CRGB led_default_color = CRGB::Purple;
 uint8_t led_brightness = 255;
 bool led_status = true;
-// LEDProgram currentPreset = LEDProgram::ColorPicker;
 LEDProgram led_current_preset = LEDProgram::Fire;
 
 // LED index arrays to separate left and right of the single strip
@@ -12,10 +11,17 @@ uint8_t led_idx1[NUM_LEDS / 2]; // LED index array for right side of painting
 uint8_t led_idx2[NUM_LEDS / 2]; // LED index array for left side of painting
 
 // preset variables
+
+// general
+uint8_t led_animation_fps = 60;
+uint8_t led_animation_hue = 0; // rotating "base color" used by many of the patterns
+uint8_t led_animation_hue_speed = 20;
+uint8_t led_animation_hue_increment = 1;
+uint8_t led_animation_bpm = 62;
+
 // Fire
 uint8_t led_fire_sparks = 120; // suggested range 50-200.
 uint8_t led_fire_cooling = 55; // suggested range 20-100
-uint8_t led_fire_fps = 60;
 uint8_t led_fire_palette_no = 0;
 
 void led_setup()
@@ -25,7 +31,7 @@ void led_setup()
     FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
     // set colorpallet to leds
     for (size_t i = 0; i < NUM_LEDS; i++)
-        leds[i] = defaultColor; // myPalette[i % NUM_GROUPS];
+        leds[i] = led_default_color; // myPalette[i % NUM_GROUPS];
 
     led_setup_split_indices();
 }
@@ -69,13 +75,64 @@ void led_update()
             FastLED.setBrightness(MAX_BRIGHTNESS);
             led_run_fire_dual();
             FastLED.show(); // display this frame
-            FastLED.delay(1000 / led_fire_fps);
+            FastLED.delay(1000 / led_animation_fps);
+            break;
 
+        case LEDProgram::Rainbow:
+            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            led_run_rainbow();
+            FastLED.show(); // display this frame
+            FastLED.delay(1000 / led_animation_fps);
+            EVERY_N_MILLISECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
+            break;
+
+        case LEDProgram::Confetti:
+            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            led_run_confetti();
+            FastLED.show(); // display this frame
+            FastLED.delay(1000 / led_animation_fps);
+            EVERY_N_MILLISECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
+            break;
+
+        case LEDProgram::Test:
+            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            led_run_circular();
+            FastLED.show(); // display this frame
+            FastLED.delay(1000 / led_animation_fps);
+            EVERY_N_MILLISECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
+            break;
+
+        case LEDProgram::Sine:
+            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            led_run_sinelon();
+            FastLED.show(); // display this frame
+            FastLED.delay(1000 / led_animation_fps);
+            EVERY_N_MILLISECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
+            break;
+
+        case LEDProgram::BPM:
+            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            led_run_bpm();
+            FastLED.show(); // display this frame
+            FastLED.delay(1000 / led_animation_fps);
+            EVERY_N_MILLISECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
+            break;
+
+        case LEDProgram::Juggle:
+            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            led_run_juggle();
+            FastLED.show(); // display this frame
+            FastLED.delay(1000 / led_animation_fps);
+            EVERY_N_MILLISECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
             break;
 
         case LEDProgram::ColorPicker:
-        default:
             FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.show(); // display this frame
+            break;
+
+        default:
+            FastLED.setBrightness(0);
             FastLED.show(); // display this frame
             break;
         }
@@ -111,8 +168,38 @@ void led_set_preset(String id)
         led_current_preset = LEDProgram::ColorPicker;
     else if (id.equals("fire"))
         led_current_preset = LEDProgram::Fire;
+    else if (id.equals("rainbow"))
+        led_current_preset = LEDProgram::Rainbow;
+    else if (id.equals("confetti"))
+        led_current_preset = LEDProgram::Confetti;
+    else if (id.equals("sine"))
+        led_current_preset = LEDProgram::Sine;
+    else if (id.equals("juggle"))
+        led_current_preset = LEDProgram::Juggle;
+    else if (id.equals("bpm"))
+        led_current_preset = LEDProgram::BPM;
+    else if (id.equals("test"))
+        led_current_preset = LEDProgram::Test;
     else
         led_current_preset = LEDProgram::ColorPicker;
+}
+
+void led_set_parameter_by_id(String id, uint8_t val)
+{
+    if (id.equals("fps"))
+        led_animation_fps = val;
+    else if (id.equals("huespeed"))
+        led_animation_hue_speed = val;
+    else if (id.equals("hueinc"))
+        led_animation_hue_increment = val;
+    else if (id.equals("spark"))
+        led_fire_sparks = val;
+    else if (id.equals("cool"))
+        led_fire_cooling = val;
+    else if (id.equals("palno"))
+        led_fire_palette_no = val;
+    else if (id.equals("bpm"))
+        led_animation_bpm = val;
 }
 
 uint8_t led_get_brightness()
@@ -139,8 +226,9 @@ void led_set_fire_parameters(uint8_t spark, uint8_t cool, uint8_t fps, uint8_t p
 {
     led_fire_sparks = spark;
     led_fire_cooling = cool;
-    led_fire_fps = fps;
     led_fire_palette_no = pnum;
+
+    led_animation_fps = fps;
 }
 
 void led_run_fire()
@@ -216,5 +304,80 @@ void led_run_fire_dual()
         colorindex = scale8(heat2[j], 240);
         color = ColorFromPalette(led_color_palettes[led_fire_palette_no], colorindex);
         leds[led_idx2[j]] = color;
+    }
+}
+
+// =============================================================================
+// OTHER
+// =============================================================================
+
+void led_run_rainbow()
+{
+    // FastLED's built-in rainbow generator
+    fill_rainbow(leds, NUM_LEDS, led_animation_hue, 7);
+}
+
+void led_addGlitter(fract8 chanceOfGlitter)
+{
+    if (random8() < chanceOfGlitter)
+    {
+        leds[random16(NUM_LEDS)] += CRGB::White;
+    }
+}
+
+void led_run_rainbowWithGlitter()
+{
+    // built-in FastLED rainbow, plus some random sparkly glitter
+    led_run_rainbow();
+    led_addGlitter(80);
+}
+
+void led_run_confetti()
+{
+    // random colored speckles that blink in and fade smoothly
+    fadeToBlackBy(leds, NUM_LEDS, 10);
+    int pos = random16(NUM_LEDS);
+    leds[pos] += CHSV(led_animation_hue + random8(64), 200, 255);
+}
+
+void led_run_sinelon()
+{
+    // a colored dot sweeping back and forth, with fading trails
+    fadeToBlackBy(leds, NUM_LEDS, 20);
+    int pos = beatsin16(13, 0, NUM_LEDS - 1);
+    leds[pos] += CHSV(led_animation_hue, 255, 192);
+}
+
+void led_run_circular()
+{
+    // a colored dot sweeping back and forth, with fading trails
+    fadeToBlackBy(leds, NUM_LEDS, 20);
+    int pos = beatsin16(13, 0, NUM_LEDS * 2 - 1);
+    MySerial.println(pos);
+    pos = pos % NUM_LEDS;
+    leds[pos] += CHSV(led_animation_hue, 255, 192);
+}
+
+void led_run_bpm()
+{
+    // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
+    uint8_t BeatsPerMinute = led_animation_bpm;
+    CRGBPalette16 palette = led_color_palettes[led_fire_palette_no];
+    uint8_t beat = beatsin8(BeatsPerMinute, 64, 255);
+    for (int i = 0; i < NUM_LEDS; i++)
+    { // 9948
+        leds[i] = ColorFromPalette(palette, led_animation_hue + (i * 2), beat - led_animation_hue + (i * 10));
+    }
+}
+
+void led_run_juggle()
+{
+    // eight colored dots, weaving in and out of sync with each other
+    fadeToBlackBy(leds, NUM_LEDS, 20);
+    uint8_t dothue = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        leds[beatsin16(i + 7, 0, NUM_LEDS - 1)] |= CHSV(dothue, 200, 255);
+        dothue += 32;
     }
 }

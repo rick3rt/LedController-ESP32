@@ -12,6 +12,9 @@
 #endif
 #include <ESPAsyncWebServer.h>
 
+#include "webserial.hpp"
+
+extern AsyncWebServer server;
 
 void setupServer();
 void notFound(AsyncWebServerRequest *request);

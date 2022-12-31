@@ -28,20 +28,24 @@ void setupServer()
                 else
                     message = "No message sent";
                 request->send(200, "text/plain", "Hello, POST: " + message);
-                Serial.print("Received msg /POST: ");
-                Serial.println(message); });
+                MySerial.print("Received msg /POST: ");
+                MySerial.println(message); });
 
     server.on("/", HTTP_POST, [](AsyncWebServerRequest *request)
               { int params = request->params();
                 for (int i = 0; i < params; i++)
                 {
                     AsyncWebParameter *p = request->getParam(i);
+#if USE_WEBSERIAL
+                    MySerial.println("cannot print content of request over webserial, use physical serial.");
+#else 
                     if (p->isFile())
-                        Serial.printf("FILE[%s]: %s, size: %u\n", p->name().c_str(), p->value().c_str(), p->size()); //p->isPost() is also true
+                        MySerial.printf("FILE[%s]: %s, size: %u\n", p->name().c_str(), p->value().c_str(), p->size()); //p->isPost() is also true
                     else if (p->isPost())
-                        Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
+                        MySerial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
                     else
-                        Serial.printf("GET[%s]: %s\n", p->name().c_str(), p->value().c_str());
+                        MySerial.printf("GET[%s]: %s\n", p->name().c_str(), p->value().c_str());
+#endif 
                 }
                 request->send(200, "text/plain", "Received Data"); });
 
@@ -55,8 +59,8 @@ void setupServer()
 
 void notFound(AsyncWebServerRequest *request)
 {
-    Serial.println("something received but not found");
-    Serial.println(request->contentLength());
+    MySerial.println("something received but not found");
+    MySerial.println(request->contentLength());
     request->send(404, "text/plain", "Not found");
 }
 
@@ -103,8 +107,8 @@ void setLEDparams(AsyncWebServerRequest *request)
     if (colorReceived)
         led_set_color(r, g, b);
 
-    Serial.print("LED INFO RECEIVED: ");
-    Serial.printf("brightness: %d, r: %d, g: %d, b: %d\n", brightness, r, g, b);
+    MySerial.println("LED INFO RECEIVED: ");
+    MySerial.printf("brightness: %d, r: %d, g: %d, b: %d\n", brightness, r, g, b);
 
     request->send(200, "text/plain", "roger"); // and let client know that we received in order
 }
@@ -117,36 +121,49 @@ void setLEDpreset(AsyncWebServerRequest *request)
     {
         message = request->getParam("name", true)->value();
         led_set_preset(message);
+        MySerial.print("PRESET CHANGED TO: ");
+        MySerial.println(message.c_str());
     }
 
     // PARAMETERS
-
-    // FIRE
-    if (message.equals("fire"))
+    size_t nparams = request->args();
+    MySerial.print("Received nparams: ");
+    MySerial.println(nparams);
+    for (size_t i = 0; i < nparams; i++)
     {
-        uint8_t spark = 120, cool = 120, fps = 60, palno = 0;
-        if (request->hasParam("spark", true))
-            spark = request->getParam("spark", true)->value().toInt();
-        if (request->hasParam("cool", true))
-            cool = request->getParam("cool", true)->value().toInt();
-        if (request->hasParam("fps", true))
-            fps = request->getParam("fps", true)->value().toInt();
-        if (request->hasParam("palno", true))
-            palno = request->getParam("palno", true)->value().toInt();
-        led_set_fire_parameters(spark, cool, fps, palno);
+        String param_name = request->getParam(i)->name();
+        uint8_t param_value = request->getParam(param_name, true)->value().toInt();
+        // MySerial.print("i: ");
+        // MySerial.print(i);
+        // MySerial.print(" - ");
+        // MySerial.print(param_name);
+        // MySerial.print(" - ");
+        // MySerial.println(param_value);
+        led_set_parameter_by_id(param_name, param_value);
     }
 
-    Serial.printf("PRESET CHANGED TO: %s\n", message.c_str());
+    // FIRE
+    // uint8_t spark = 120, cool = 120, fps = 60, palno = 0;
+    // if (request->hasParam("spark", true))
+    //     spark = request->getParam("spark", true)->value().toInt();
+    // if (request->hasParam("cool", true))
+    //     cool = request->getParam("cool", true)->value().toInt();
+    // if (request->hasParam("fps", true))
+    //     fps = request->getParam("fps", true)->value().toInt();
+    // if (request->hasParam("palno", true))
+    //     palno = request->getParam("palno", true)->value().toInt();
+    // led_set_fire_parameters(spark, cool, fps, palno);
+
     request->send(200, "text/plain", "roger"); // and let client know that we received in order
 }
 
 void requestParameter(AsyncWebServerRequest *request)
 {
-    Serial.print("GET request received: ");
+    MySerial.print("GET request received: ");
     if (request->hasParam("brightness"))
     {
         request->send(200, "text/plain", String(led_get_brightness()));
-        Serial.println("brightness");
+        MySerial.println("brightness");
     }
     else
     { // useless but keep for browser interaction : ip:port/get?message=test
