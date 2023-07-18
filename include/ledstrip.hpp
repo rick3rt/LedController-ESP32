@@ -6,7 +6,7 @@
 #include "webserial.hpp"
 
 // LED STRIP details
-#define LEDSTRIP_PIN 3
+#define LEDSTRIP_PIN 19
 #define COLOR_ORDER GRB
 #define CHIPSET WS2812
 #define NUM_LEDS 110 // bottom 24, right 31, top 24, left 31 == total 110
@@ -33,6 +33,7 @@ uint8_t led_get_brightness();
 enum class LEDProgram
 {
     ColorPicker,
+    ColorSweep,
     Fire,
     Rainbow,
     Confetti,
@@ -47,6 +48,7 @@ void led_set_fire_parameters(uint8_t spark, uint8_t cool, uint8_t fps, uint8_t p
 void led_run_fire();
 void led_run_fire_dual();
 
+void led_run_colorsweep();
 void led_run_rainbow();
 void led_run_confetti();
 void led_run_sinelon();

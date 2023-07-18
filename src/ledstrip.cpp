@@ -4,7 +4,7 @@ CRGB leds[NUM_LEDS];
 CRGB led_default_color = CRGB::Purple;
 uint8_t led_brightness = 255;
 bool led_status = true;
-LEDProgram led_current_preset = LEDProgram::Fire;
+LEDProgram led_current_preset = LEDProgram::ColorSweep;
 
 // LED index arrays to separate left and right of the single strip
 uint8_t led_idx1[NUM_LEDS / 2]; // LED index array for right side of painting
@@ -70,6 +70,19 @@ void led_update()
     {
         switch (led_current_preset)
         {
+        case LEDProgram::ColorPicker:
+            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.show(); // display this frame
+            break;
+
+        case LEDProgram::ColorSweep:
+            led_run_colorsweep();
+            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            EVERY_N_SECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
+            FastLED.show();                                                                                // display this frame
+            FastLED.delay(1000 / led_animation_fps);
+            break;
+
         case LEDProgram::Fire:
             random16_add_entropy(random());
             FastLED.setBrightness(MAX_BRIGHTNESS);
@@ -126,11 +139,6 @@ void led_update()
             EVERY_N_MILLISECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
             break;
 
-        case LEDProgram::ColorPicker:
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
-            FastLED.show(); // display this frame
-            break;
-
         default:
             FastLED.setBrightness(0);
             FastLED.show(); // display this frame
@@ -166,6 +174,8 @@ void led_set_preset(String id)
 {
     if (id.equals("colorpicker"))
         led_current_preset = LEDProgram::ColorPicker;
+    else if (id.equals("colorsweep"))
+        led_current_preset = LEDProgram::ColorSweep;
     else if (id.equals("fire"))
         led_current_preset = LEDProgram::Fire;
     else if (id.equals("rainbow"))
@@ -184,21 +194,21 @@ void led_set_preset(String id)
         led_current_preset = LEDProgram::ColorPicker;
 }
 
-void led_set_parameter_by_id(String id, uint8_t val)
+void led_set_parameter_by_id(String param_id, uint8_t val)
 {
-    if (id.equals("fps"))
+    if (param_id.equals("fps"))
         led_animation_fps = val;
-    else if (id.equals("huespeed"))
+    else if (param_id.equals("huespeed"))
         led_animation_hue_speed = val;
-    else if (id.equals("hueinc"))
+    else if (param_id.equals("hueinc"))
         led_animation_hue_increment = val;
-    else if (id.equals("spark"))
+    else if (param_id.equals("spark"))
         led_fire_sparks = val;
-    else if (id.equals("cool"))
+    else if (param_id.equals("cool"))
         led_fire_cooling = val;
-    else if (id.equals("palno"))
+    else if (param_id.equals("palno"))
         led_fire_palette_no = val;
-    else if (id.equals("bpm"))
+    else if (param_id.equals("bpm"))
         led_animation_bpm = val;
 }
 
@@ -310,6 +320,12 @@ void led_run_fire_dual()
 // =============================================================================
 // OTHER
 // =============================================================================
+
+void led_run_colorsweep()
+{
+    for (int i = 0; i < NUM_LEDS; i++)
+        leds[i] = CHSV(led_animation_hue, 255, 255);
+}
 
 void led_run_rainbow()
 {

@@ -1,6 +1,25 @@
-#pragma GCC diagnostic ignored "-Wregister"
-
 #include <Arduino.h>
+#if 0
+#define PIN 14
+void setup()
+{
+    pinMode(PIN, OUTPUT);
+    Serial.begin(115200);
+    Serial.println("hallo");
+}
+
+void loop()
+{
+    Serial.println("high");
+    digitalWrite(PIN, HIGH);
+    delay(500);
+
+    Serial.println("low");
+    digitalWrite(PIN, LOW);
+    delay(500);
+}
+
+#else
 #include <ArduinoOTA.h>
 
 #ifdef ESP32
@@ -16,11 +35,16 @@
 #include "ledstrip.hpp"
 #include "server.hpp"
 
-#define DEBUG 1
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
+#define DEBUG 0
 
 // WIFI settings
 const char *const ssid = "LekkerBrownennn2";
 const char *const password = "wegwezen3";
+const char *const hostname = "LED-Controller";
 
 // =============================================================================
 // webserial callback
@@ -41,8 +65,9 @@ void setup()
 
     // start WIFI
     WiFi.mode(WIFI_STA);
+    WiFi.setHostname(hostname);
     WiFi.begin(ssid, password);
-    wifi_station_set_hostname("test11");
+
     if (WiFi.waitForConnectResult() != WL_CONNECTED)
     {
         Serial.printf("WiFi Failed!\n");
@@ -77,10 +102,19 @@ void setup()
 // =============================================================================
 unsigned long last_LED_update = 0;
 unsigned long last_LED_switch = 0;
+unsigned long last_debug_print = 0;
 bool LED_status = false;
 void loop()
 {
     unsigned long cur_time = millis();
+
+#if DEBUG
+    if (cur_time - last_debug_print >= 1000)
+    {
+        last_debug_print = cur_time;
+        Serial.println("looping");
+    }
+#endif
 
 // builtin LED flash (debug)
 #if DEBUG
@@ -97,56 +131,4 @@ void loop()
     // OTA:
     ArduinoOTA.handle();
 }
-
-// =============================================================================
-// OLD
-// =============================================================================
-// #define UPDATE_RATE 100
-// LED strip updg && cur_time - last_LED_update >= 1000 / UPDATE_RATE)
-// {ate
-// if (isRunnin
-//     last_LED_update = cur_time;
-//     incrementColors();
-// }
-// #if 1
-// #define NUM_GROUPS 3
-// CRGB myPalette[NUM_GROUPS] = {
-//     CRGB::Red,
-//     CRGB::Orange,
-//     CRGB::BlueViolet,
-// };
-// bool isRunning = false;
-// #else
-// #define NUM_GROUPS 15
-// CRGB myPalette[NUM_GROUPS] = {
-//     CRGB::Red,
-//     CRGB::Black,
-//     CRGB::Black,
-//     CRGB::Black,
-//     CRGB::Black,
-//     CRGB::Blue,
-//     CRGB::Black,
-//     CRGB::Black,
-//     CRGB::Black,
-//     CRGB::Black,
-//     CRGB::Green,
-//     CRGB::Black,
-//     CRGB::Black,
-//     CRGB::Black,
-//     CRGB::Black,
-// };
-// bool isRunning = true;
-// #endif
-// static void incrementColors()
-// {
-//     // multi color move
-//     for (size_t i = NUM_LEDS - 1; i > 0; i--)
-//         leds[i] = leds[i - 1];
-//     firstLedCol = (firstLedCol + 1) % NUM_GROUPS;
-//     leds[0] = myPalette[firstLedCol];
-// }
-//
-// static void toggleRun()
-// {
-//     isRunning = !isRunning;
-// }
+#endif
