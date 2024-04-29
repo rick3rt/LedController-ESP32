@@ -1,23 +1,23 @@
 #include "ledstrip.hpp"
 
-CRGB leds[NUM_LEDS];
-CRGB led_default_color = CRGB::Purple;
+CRGB leds[LD_NUM_LEDS];
+CRGB led_default_color = CRGB::White;
 uint8_t led_brightness = 255;
 bool led_status = true;
 LEDProgram led_current_preset = LEDProgram::ColorSweep;
 
 // LED index arrays to separate left and right of the single strip
-uint8_t led_idx1[NUM_LEDS / 2]; // LED index array for right side of painting
-uint8_t led_idx2[NUM_LEDS / 2]; // LED index array for left side of painting
+uint8_t led_idx1[LD_NUM_LEDS / 2]; // LED index array for right side of painting
+uint8_t led_idx2[LD_NUM_LEDS / 2]; // LED index array for left side of painting
 
 // preset variables
 
 // general
 uint8_t led_animation_fps = 60;
 uint8_t led_animation_hue = 0; // rotating "base color" used by many of the patterns
-uint8_t led_animation_hue_speed = 20;
+uint8_t led_animation_hue_speed = 1;
 uint8_t led_animation_hue_increment = 1;
-uint8_t led_animation_bpm = 62;
+uint8_t led_animation_bpm = 60;
 
 // Fire
 uint8_t led_fire_sparks = 120; // suggested range 50-200.
@@ -27,13 +27,17 @@ uint8_t led_fire_palette_no = 0;
 void led_setup()
 {
     // setup led strip
-    FastLED.addLeds<CHIPSET, LEDSTRIP_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+    FastLED.addLeds<LD_CHIPSET, LD_STRIP_PIN, LD_COLOR_ORDER>(leds, LD_NUM_LEDS);
+    FastLED.setCorrection(TypicalLEDStrip);
+    FastLED.clear();
+    FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
+
     // set colorpallet to leds
-    for (size_t i = 0; i < NUM_LEDS; i++)
+    for (size_t i = 0; i < LD_NUM_LEDS; i++)
         leds[i] = led_default_color; // myPalette[i % NUM_GROUPS];
 
     led_setup_split_indices();
+    led_set_preset("colorsweep");
 }
 
 /**
@@ -43,14 +47,14 @@ void led_setup()
  */
 void led_setup_split_indices()
 {
-    const int NH = NUM_LEDS / 2;
+    const int NH = LD_NUM_LEDS / 2;
     const int width = 24;
     // const int height = 31;
 
     for (int i = 0; i < NH; i++)
     {
         led_idx1[i] = i + width / 2;
-        led_idx2[i] = NUM_LEDS + width / 2 - i - 1;
+        led_idx2[i] = LD_NUM_LEDS + width / 2 - i - 1;
     }
     for (int i = 0; i < width / 2; i++)
         led_idx2[i] = width / 2 - 1 - i;
@@ -71,28 +75,28 @@ void led_update()
         switch (led_current_preset)
         {
         case LEDProgram::ColorPicker:
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
             FastLED.show(); // display this frame
             break;
 
         case LEDProgram::ColorSweep:
             led_run_colorsweep();
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
-            EVERY_N_SECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
-            FastLED.show();                                                                                // display this frame
+            FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
+            EVERY_N_MILLISECONDS(led_animation_hue_speed) { led_animation_hue += led_animation_hue_increment; } // slowly cycle the "base color" through the rainbow
+            FastLED.show();                                                                                     // display this frame
             FastLED.delay(1000 / led_animation_fps);
             break;
 
         case LEDProgram::Fire:
             random16_add_entropy(random());
-            FastLED.setBrightness(MAX_BRIGHTNESS);
+            FastLED.setBrightness(LD_MAX_BRIGHTNESS);
             led_run_fire_dual();
             FastLED.show(); // display this frame
             FastLED.delay(1000 / led_animation_fps);
             break;
 
         case LEDProgram::Rainbow:
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
             led_run_rainbow();
             FastLED.show(); // display this frame
             FastLED.delay(1000 / led_animation_fps);
@@ -100,7 +104,7 @@ void led_update()
             break;
 
         case LEDProgram::Confetti:
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
             led_run_confetti();
             FastLED.show(); // display this frame
             FastLED.delay(1000 / led_animation_fps);
@@ -108,7 +112,7 @@ void led_update()
             break;
 
         case LEDProgram::Test:
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
             led_run_circular();
             FastLED.show(); // display this frame
             FastLED.delay(1000 / led_animation_fps);
@@ -116,7 +120,7 @@ void led_update()
             break;
 
         case LEDProgram::Sine:
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
             led_run_sinelon();
             FastLED.show(); // display this frame
             FastLED.delay(1000 / led_animation_fps);
@@ -124,7 +128,7 @@ void led_update()
             break;
 
         case LEDProgram::BPM:
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
             led_run_bpm();
             FastLED.show(); // display this frame
             FastLED.delay(1000 / led_animation_fps);
@@ -132,7 +136,7 @@ void led_update()
             break;
 
         case LEDProgram::Juggle:
-            FastLED.setBrightness(MIN(led_brightness, MAX_BRIGHTNESS));
+            FastLED.setBrightness(MIN(led_brightness, LD_MAX_BRIGHTNESS));
             led_run_juggle();
             FastLED.show(); // display this frame
             FastLED.delay(1000 / led_animation_fps);
@@ -164,10 +168,15 @@ void led_set_status(bool status)
 
 void led_set_color(uint8_t r, uint8_t g, uint8_t b)
 {
-    for (size_t i = 0; i < NUM_LEDS; i++)
+    for (size_t i = 0; i < LD_NUM_LEDS; i++)
         leds[i] = CRGB(r, g, b);
 
     FastLED.show(); // display this frame
+}
+
+void led_set_preset(LEDProgram preset)
+{
+    led_current_preset = preset;
 }
 
 void led_set_preset(String id)
@@ -244,14 +253,14 @@ void led_set_fire_parameters(uint8_t spark, uint8_t cool, uint8_t fps, uint8_t p
 void led_run_fire()
 {
     // Array of temperature readings at each simulation cell
-    static uint8_t heat[NUM_LEDS];
+    static uint8_t heat[LD_NUM_LEDS];
 
     // Step 1.  Cool down every cell a little
-    for (int i = 0; i < NUM_LEDS; i++)
-        heat[i] = qsub8(heat[i], random8(0, ((led_fire_cooling * 10) / NUM_LEDS) + 2));
+    for (int i = 0; i < LD_NUM_LEDS; i++)
+        heat[i] = qsub8(heat[i], random8(0, ((led_fire_cooling * 10) / LD_NUM_LEDS) + 2));
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (int k = NUM_LEDS - 1; k >= 2; k--)
+    for (int k = LD_NUM_LEDS - 1; k >= 2; k--)
         heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
@@ -262,7 +271,7 @@ void led_run_fire()
     }
 
     // Step 4.  Map from heat cells to LED colors
-    for (int j = 0; j < NUM_LEDS; j++)
+    for (int j = 0; j < LD_NUM_LEDS; j++)
     {
         // Scale the heat value from 0-255 down to 0-240
         // for best results with color palettes.
@@ -274,7 +283,7 @@ void led_run_fire()
 
 void led_run_fire_dual()
 {
-    const int nheat = NUM_LEDS / 2;
+    const int nheat = LD_NUM_LEDS / 2;
 
     // Array of temperature readings at each simulation cell
     static uint8_t heat1[nheat];
@@ -323,21 +332,21 @@ void led_run_fire_dual()
 
 void led_run_colorsweep()
 {
-    for (int i = 0; i < NUM_LEDS; i++)
+    for (int i = 0; i < LD_NUM_LEDS; i++)
         leds[i] = CHSV(led_animation_hue, 255, 255);
 }
 
 void led_run_rainbow()
 {
     // FastLED's built-in rainbow generator
-    fill_rainbow(leds, NUM_LEDS, led_animation_hue, 7);
+    fill_rainbow(leds, LD_NUM_LEDS, led_animation_hue, 7);
 }
 
 void led_addGlitter(fract8 chanceOfGlitter)
 {
     if (random8() < chanceOfGlitter)
     {
-        leds[random16(NUM_LEDS)] += CRGB::White;
+        leds[random16(LD_NUM_LEDS)] += CRGB::White;
     }
 }
 
@@ -351,26 +360,25 @@ void led_run_rainbowWithGlitter()
 void led_run_confetti()
 {
     // random colored speckles that blink in and fade smoothly
-    fadeToBlackBy(leds, NUM_LEDS, 10);
-    int pos = random16(NUM_LEDS);
+    fadeToBlackBy(leds, LD_NUM_LEDS, 10);
+    int pos = random16(LD_NUM_LEDS);
     leds[pos] += CHSV(led_animation_hue + random8(64), 200, 255);
 }
 
 void led_run_sinelon()
 {
     // a colored dot sweeping back and forth, with fading trails
-    fadeToBlackBy(leds, NUM_LEDS, 20);
-    int pos = beatsin16(13, 0, NUM_LEDS - 1);
+    fadeToBlackBy(leds, LD_NUM_LEDS, 20);
+    int pos = beatsin16(13, 0, LD_NUM_LEDS - 1);
     leds[pos] += CHSV(led_animation_hue, 255, 192);
 }
 
 void led_run_circular()
 {
     // a colored dot sweeping back and forth, with fading trails
-    fadeToBlackBy(leds, NUM_LEDS, 20);
-    int pos = beatsin16(13, 0, NUM_LEDS * 2 - 1);
-    MySerial.println(pos);
-    pos = pos % NUM_LEDS;
+    fadeToBlackBy(leds, LD_NUM_LEDS, 20);
+    int pos = beatsin16(13, 0, LD_NUM_LEDS * 2 - 1);
+    pos = pos % LD_NUM_LEDS;
     leds[pos] += CHSV(led_animation_hue, 255, 192);
 }
 
@@ -380,7 +388,7 @@ void led_run_bpm()
     uint8_t BeatsPerMinute = led_animation_bpm;
     CRGBPalette16 palette = led_color_palettes[led_fire_palette_no];
     uint8_t beat = beatsin8(BeatsPerMinute, 64, 255);
-    for (int i = 0; i < NUM_LEDS; i++)
+    for (int i = 0; i < LD_NUM_LEDS; i++)
     { // 9948
         leds[i] = ColorFromPalette(palette, led_animation_hue + (i * 2), beat - led_animation_hue + (i * 10));
     }
@@ -389,11 +397,11 @@ void led_run_bpm()
 void led_run_juggle()
 {
     // eight colored dots, weaving in and out of sync with each other
-    fadeToBlackBy(leds, NUM_LEDS, 20);
+    fadeToBlackBy(leds, LD_NUM_LEDS, 20);
     uint8_t dothue = 0;
     for (int i = 0; i < 8; i++)
     {
-        leds[beatsin16(i + 7, 0, NUM_LEDS - 1)] |= CHSV(dothue, 200, 255);
+        leds[beatsin16(i + 7, 0, LD_NUM_LEDS - 1)] |= CHSV(dothue, 200, 255);
         dothue += 32;
     }
 }

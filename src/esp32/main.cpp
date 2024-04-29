@@ -1,26 +1,8 @@
 #include <Arduino.h>
-#if 0
-#define PIN 14
-void setup()
-{
-    pinMode(PIN, OUTPUT);
-    Serial.begin(115200);
-    Serial.println("hallo");
-}
-
-void loop()
-{
-    Serial.println("high");
-    digitalWrite(PIN, HIGH);
-    delay(500);
-
-    Serial.println("low");
-    digitalWrite(PIN, LOW);
-    delay(500);
-}
-
-#else
 #include <ArduinoOTA.h>
+
+#define DEBUG 0
+
 
 #ifdef ESP32
 #include <WiFi.h>
@@ -39,12 +21,12 @@ void loop()
 #define LED_BUILTIN 2
 #endif
 
-#define DEBUG 0
 
 // WIFI settings
-const char *const ssid = "LekkerBrownennn2";
+const char *const ssid = "LekkerBrownennn";
 const char *const password = "wegwezen3";
 const char *const hostname = "LED-Controller";
+bool wifi_connected = false;
 
 // =============================================================================
 // webserial callback
@@ -63,6 +45,13 @@ void setup()
     Serial.begin(115200);
     Serial.println("\n\nSerial monitor started");
 
+    led_setup();
+    Serial.println("LED strip initialized");
+
+    // set status led
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+
     // start WIFI
     WiFi.mode(WIFI_STA);
     WiFi.setHostname(hostname);
@@ -70,31 +59,27 @@ void setup()
 
     if (WiFi.waitForConnectResult() != WL_CONNECTED)
     {
-        Serial.printf("WiFi Failed!\n");
+
+        Serial.printf("WiFi Failed! Reason: %i\n", WiFi.status());
         return;
     }
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
-
-    // set status led
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
-
-    // start server
-    setupServer();
-    Serial.println("SERVER online");
-
-    led_setup();
-    Serial.println("LED strip initialized");
-
-    // OTA:
-    ArduinoOTA.begin();
+    wifi_connected = true;
 
 // webserial
 #if USE_WEBSERIAL
     WebSerial.begin(&server);
     WebSerial.msgCallback(callback);
 #endif
+
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    // start server
+    setupServer();
+    Serial.println("SERVER online");
+
+    // OTA:
+    ArduinoOTA.begin();
 }
 
 // =============================================================================
@@ -109,7 +94,7 @@ void loop()
     unsigned long cur_time = millis();
 
 #if DEBUG
-    if (cur_time - last_debug_print >= 1000)
+    if (cur_time - last_debug_print >= 1000 * 3)
     {
         last_debug_print = cur_time;
         Serial.println("looping");
@@ -128,7 +113,9 @@ void loop()
 
     led_update();
 
-    // OTA:
-    ArduinoOTA.handle();
+    if (wifi_connected)
+    {
+        // OTA:
+        ArduinoOTA.handle();
+    }
 }
-#endif

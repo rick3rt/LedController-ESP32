@@ -11,12 +11,12 @@ NodeMCU with WS2812b led strip, controllable from android app.
 #define DEBUG 1
 
 // LED STRIP details
-#define LEDSTRIP_PIN 3
-#define COLOR_ORDER GRB
-#define CHIPSET WS2812
-#define NUM_LEDS 110 // bottom 24, right 31, top 24, left 31 == total 110
+#define LD_STRIP_PIN 3
+#define LD_COLOR_ORDER GRB
+#define LD_CHIPSET WS2812
+#define LD_NUM_LEDS 110 // bottom 24, right 31, top 24, left 31 == total 110
 
-CRGB leds[NUM_LEDS];
+CRGB leds[LD_NUM_LEDS];
 uint8_t ledBrightVal = 200;
 int ledBrightDir = 1;
 CRGB myColor = CRGB::Blue;
@@ -27,10 +27,10 @@ void setup()
     digitalWrite(LED_BUILTIN, LOW);
 
     // setup led strip
-    FastLED.addLeds<CHIPSET, LEDSTRIP_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+    FastLED.addLeds<LD_CHIPSET, LD_STRIP_PIN, LD_COLOR_ORDER>(leds, LD_NUM_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(ledBrightVal);
     // set colorpallet to leds
-    for (size_t i = 0; i < NUM_LEDS; i++)
+    for (size_t i = 0; i < LD_NUM_LEDS; i++)
         leds[i] = myColor; // myPalette[i % NUM_GROUPS];
 }
 
